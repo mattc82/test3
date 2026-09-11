@@ -1,168 +1,174 @@
-# Practice Lab Exam: Run-Length Encoder
+# Alternating Shift Cipher
 
-**This is a self-study practice exam, not a real course document.** It was
-put together to give you extra reps on the concepts from PA0 (argument
-processing, C strings as arrays, character manipulation, function
-prototypes, and simple control flow) in a fresh problem, since you can't
-reuse your actual PA0 submission to study from. There is no real grader,
-no real deadline, and no real academic-integrity policy attached to this
-file — treat it like a self-quiz. (If you want to practice "exam
-conditions," just set a timer, close your notes except the man pages, and
-don't look at your PA0 code while you work.)
+Simple substitution ciphers were historically used to obscure short messages.
+In this lab exam, you will implement an *alternating shift cipher*.
 
-## 1. Introduction
+The cipher uses two different shifts:
 
-In PA0 you wrote a **decoder** for run-length encoded (RLE) strings. In
-this practice exam you'll write the other half of that pipeline: an
-**encoder**. Given a plain string, your program should compress runs of
-repeated characters into `<count><char>` pairs, exactly like the encoding
-you were decoding in PA0.
+- Characters at even indexes use a shift of 3.
+- Characters at odd indexes use a shift of 7.
 
-Some examples of the compression, using the same convention as PA0 (every
-run — even a run of length one — is written out with its count):
+Indexes start at zero. Therefore, the first character uses a shift of 3, the
+second character uses a shift of 7, the third uses a shift of 3, and so on.
 
-```
-aaabbc          => 3a2b1c
-abbCCC          => 1a2b3C
-eeeeeeeeeeeeeeezzz => 15e3z
+Letters rotate through their own alphabet while preserving case. Digits rotate
+through the decimal digits. All other characters remain unchanged.
+
+For example:
+
+```text
+Plain text: Hello, World! 1234
+Encrypted:  Klsor, Zvuso! 4567
 ```
 
-Non-letter characters are valid input too, and are compressed the same
-way:
+The first character, `H`, has index 0, so it shifts by 3:
 
+```text
+H -> K
 ```
-& ((( @         => 1&1 3(1 1@
+
+The second character, `e`, has index 1, so it shifts by 7:
+
+```text
+e -> l
 ```
 
-## 2. Suggested Resources
+The third character, `l`, has index 2, so it shifts by 3:
 
-To keep this close to real exam conditions, hold yourself to the same
-resource limits as the real thing:
-
-- Unix man pages (`man <topic>`) and info pages (`info <topic>`) are fair
-  game.
-- Don't look at your PA0 `rldecode.c` while you work — the point is to
-  write the logic fresh, not transcribe it.
-- No Stack Overflow, no GitHub search, no asking an AI to write the
-  function bodies for you. (Asking *me* to help you set up this practice
-  repo, explain a concept, or review your finished code afterward is a
-  different thing entirely — just don't let a tool write the exam
-  answers for you, or the practice won't do anything for you.)
-
-## 3. Requirements
-
-You must implement two functions in `src/rlencode.c` (prototypes are
-already provided at the top of the file):
-
-- **`int countrun(const char *str, int start)`**
-  Given a string and a starting index, this function returns the number
-  of times `str[start]` repeats *consecutively* beginning at that index.
-  For example, if `str` is `"aaabbc"` and `start` is `0`, it should
-  return `3` (three `a`s in a row starting at index 0). If `start` is
-  `3`, it should return `1` (only one `b` at index 3, since index 4 is
-  also `b`... look carefully at where each run actually starts before
-  you assume the answer!).
-  You do not need to handle `start` being out of bounds or negative.
-
-- **`int encode(char *str)`**
-  This function walks the entire string, uses `countrun()` to find each
-  run, and prints the encoded result to standard output (count followed
-  by character, for every run, with no separators between pairs),
-  followed by a single ASCII newline. It returns the integer length of
-  the *encoded* output string (not the input string) as a C integer.
-  An empty input string (length 0) is considered malformed input for
-  this exercise: `encode()` should print an error message to standard
-  output instead of an encoded string, and return `-1`.
-
-You are also given (already partially implemented) **`int main(int argc,
-char *argv[])`**, which is responsible for command-line argument
-handling. It must:
-
-- Accept exactly one command-line argument (the string to encode).
-- Any other invocation (zero, two, or more arguments) is an error: print
-  a usage message and return a non-zero value from `main()`, without
-  calling `encode()`.
-- On a correct invocation, call `encode()` on the argument and return `0`
-  if `encode()` succeeds (returns a non-negative length) or a non-zero
-  value if `encode()` reports malformed input (`-1`).
-
-## 4. Guidance
-
-- Structure `encode()` around `countrun()`, the same way PA0's
-  `decode()` was structured around `isnumber()`. If you find yourself
-  writing run-detection logic inline in `encode()` instead of calling
-  `countrun()`, stop and reconsider.
-- `countrun()` is a plain character-array walk: start at the given
-  index, and keep looking at the *next* character to see if it matches
-  the one you started on. Stop as soon as it doesn't (or you hit the
-  end of the string, marked by `'\0'`).
-- Once you know a run's length and character, you need to print an
-  integer followed by a character. `printf("%d%c", count, ch)` is fine
-  to use here — the "don't use library integer-parsing functions" rule
-  from PA0 was about *parsing* integers out of a string you're given,
-  not about printing one you already computed. There's no parsing of
-  untrusted integers happening in this assignment at all.
-- To move from one run to the next inside `encode()`, remember that
-  `countrun()` already told you how long the current run is — use that
-  to jump your index forward instead of re-scanning character by
-  character.
-- Watch your string terminator. `strlen()` from `<string.h>` is fine to
-  use if you want the input length up front, but you can also just walk
-  until you hit `'\0'`.
-
-## 5. Testing
-
-A handful of test cases are provided under `tests/cases/`. Each test
-`NN` consists of:
-
-- `NN.args` — the single command-line argument to pass to your program
-- `NN.expected_stdout` — the exact standard output your program should
-  produce
-- `NN.expected_status` — the exit status your program should return
-  (`0` or `1`)
-
-Run the whole suite with:
-
+```text
+l -> o
 ```
+
+Digits use the same alternating shifts:
+
+```text
+1 -> 4
+2 -> 9
+3 -> 6
+4 -> 1
+```
+
+## Academic Integrity
+
+_**THIS IS AN EXAMINATION**_. You must follow your course’s academic integrity
+policies. Use only the resources explicitly authorized by your instructor.
+
+## Resources
+
+You may use Unix manual pages and info pages available on the lab machines.
+
+Useful manual pages include:
+
+```text
+man 3 isalpha
+man 3 isdigit
+man 3 islower
+man 3 isupper
+```
+
+You may use any functions declared in `ctype.h`.
+
+## Requirements
+
+Implement the two functions in `src/alternating_shift.c`.
+
+### `char shift_char(char c, int shift)`
+
+This function shifts one character forward by `shift` positions.
+
+It must obey these rules:
+
+1. Uppercase letters remain uppercase.
+2. Lowercase letters remain lowercase.
+3. Letters wrap around from `Z` to `A` and from `z` to `a`.
+4. Digits wrap around from `9` to `0`.
+5. Characters that are not letters or digits remain unchanged.
+6. The `shift` value may be larger than the size of a character set.
+
+Examples:
+
+```text
+shift_char('A', 3)  returns 'D'
+shift_char('Z', 3)  returns 'C'
+shift_char('x', 7)  returns 'e'
+shift_char('8', 5)  returns '3'
+shift_char('!', 3)  returns '!'
+```
+
+### `void alternating_shift_string(char *str)`
+
+This function encrypts the null-terminated string `str` in place.
+
+For every character in the string:
+
+- Use a shift of 3 if its index is even.
+- Use a shift of 7 if its index is odd.
+- Use `shift_char()` to transform the character.
+
+The null terminator (`'\0'`) must remain at the end of the string.
+
+Examples:
+
+```text
+Input:  "ABC"
+Output: "DJF"
+
+Input:  "Zebra 98!"
+Output: "Cleyh 21!"
+
+Input:  "a-b"
+Output: "d-e"
+```
+
+## Guidelines
+
+You should use `shift_char()` inside `alternating_shift_string()`.
+
+You can convert a character to its zero-based position by subtracting the
+first character in the relevant set:
+
+```c
+'A' - 'A' == 0
+'B' - 'A' == 1
+'a' - 'a' == 0
+'7' - '0' == 7
+```
+
+The modulus operator (`%`) is useful for wrapping around a character set.
+
+For example, shifting `Z` by 3:
+
+```c
+('Z' - 'A' + 3) % 26
+```
+
+This produces the zero-based position of `C`.
+
+Digits work similarly, except there are 10 digits instead of 26 letters.
+
+## Testing
+
+Run all provided tests from the top-level directory:
+
+```sh
 make test
 ```
 
-This builds `rlencode` and runs `tests/run_tests.sh` against it. Feel
-free to add your own cases to `tests/cases/` — that's good practice for
-thinking about edge cases (what happens with a one-character string? A
-string that's all one repeated character? A string with no repeats at
-all?).
+You may write additional tests while developing.
 
-## 6. Self-Grading Rubric
+## Submission
 
-There's no autograder here, so use this checklist to self-assess, out of
-20 points total, mirroring how a real lab exam in this format tends to
-be weighted:
+Submit only:
 
-| Points | Criterion |
-|-------:|-----------|
-| 6 | `countrun()` correctly finds run lengths for runs at the start, middle, and end of a string |
-| 4 | `encode()` correctly encodes strings made of a single run |
-| 6 | `encode()` correctly encodes strings with a mixture of several runs and character types (letters, symbols, spaces) |
-| 4 | `main()` and `encode()` correctly detect and report the two error cases (bad argument count; empty string) with the right exit status |
-
-## 7. Getting Your Own Copy
-
-This folder is already a small git repository (see `git log`), so you
-can clone it locally the same way you'd clone any other repo, then work
-in the clone:
-
-```
-git clone /path/to/rlencode-practice-exam my-practice-copy
-cd my-practice-copy
+```text
+src/alternating_shift.c
 ```
 
-or, if you'd rather have it under your own GitHub account so you can
-push progress commits the way you do for real assignments, create a new
-empty repository on GitHub first and then:
+## Grading
 
-```
-cd rlencode-practice-exam
-git remote add origin <your-new-empty-repo-url>
-git push -u origin main
-```
+| Category | Points |
+|---|---:|
+| Single-character shifting with `shift_char()` | 8 |
+| Alternating shifts for simple strings | 6 |
+| Mixed letters, digits, punctuation, and spaces | 6 |
+| **Total** | **20** |
