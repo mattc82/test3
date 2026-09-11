@@ -1,174 +1,238 @@
-# Alternating Shift Cipher
+# PacketRot Decoder
 
-Simple substitution ciphers were historically used to obscure short messages.
-In this lab exam, you will implement an *alternating shift cipher*.
+This exam implements a small command-line decoder for a compact packet format.
 
-The cipher uses two different shifts:
+A packet is made of one or more *runs*. Each run has this format:
 
-- Characters at even indexes use a shift of 3.
-- Characters at odd indexes use a shift of 7.
+```text
+count:character
+```
 
-Indexes start at zero. Therefore, the first character uses a shift of 3, the
-second character uses a shift of 7, the third uses a shift of 3, and so on.
-
-Letters rotate through their own alphabet while preserving case. Digits rotate
-through the decimal digits. All other characters remain unchanged.
+- `count` is a positive decimal integer from 1 through 99.
+- `:` separates the count from its character.
+- `character` is one non-colon ASCII character.
 
 For example:
 
 ```text
-Plain text: Hello, World! 1234
-Encrypted:  Klsor, Zvuso! 4567
+3:a2:Z4:7
 ```
 
-The first character, `H`, has index 0, so it shifts by 3:
+contains three runs:
 
 ```text
-H -> K
+3:a
+2:Z
+4:7
 ```
 
-The second character, `e`, has index 1, so it shifts by 7:
+The packet is decoded by repeating each character the specified number of
+times. Before printing each repeated character, transform it with ROT13:
+
+- Uppercase and lowercase letters rotate by 13 positions.
+- Digits rotate by 5 positions.
+- All other characters remain unchanged.
+
+Therefore:
 
 ```text
-e -> l
+Input:  3:a2:Z4:7
+Output: nnnMM2222
 ```
 
-The third character, `l`, has index 2, so it shifts by 3:
+The packet `1:H1:e1:l1:l1:o` decodes to:
 
 ```text
-l -> o
-```
-
-Digits use the same alternating shifts:
-
-```text
-1 -> 4
-2 -> 9
-3 -> 6
-4 -> 1
+Uryyb
 ```
 
 ## Academic Integrity
 
-_**THIS IS AN EXAMINATION**_. You must follow your course’s academic integrity
-policies. Use only the resources explicitly authorized by your instructor.
+_**THIS IS AN EXAMINATION**_. Follow your instructor’s academic-integrity
+rules and use only the resources specifically authorized for this exam.
 
 ## Resources
 
-You may use Unix manual pages and info pages available on the lab machines.
+You may use Unix manual pages and info pages on the lab machines.
 
-Useful manual pages include:
+Potentially useful manual pages:
 
 ```text
-man 3 isalpha
-man 3 isdigit
-man 3 islower
+man 3 putchar
 man 3 isupper
+man 3 islower
+man 3 isdigit
 ```
 
-You may use any functions declared in `ctype.h`.
+You may use functions from `ctype.h` for `rot13_char()`.
+
+You may **not** use `atoi()`, `strtol()`, `sscanf()`, or another library
+function that parses a number from a string.
+
+## Program Invocation
+
+Your program must be run with exactly one packet argument:
+
+```sh
+./packetrot 3:a2:Z4:7
+```
+
+A successful invocation prints the decoded message followed by one newline and
+returns zero.
+
+Invalid invocations or malformed packets must print an error message to
+standard error and return a nonzero value.
+
+## Valid Packet Rules
+
+A valid packet must meet all of these requirements:
+
+1. It contains at least one run.
+2. Every run begins with one or two ASCII digits.
+3. Each count is from `1` through `99`.
+4. A count may not begin with `0`.
+5. Each count is followed immediately by a colon (`:`).
+6. Each colon is followed by exactly one non-colon character.
+7. The end of one run is immediately followed by the count of the next run.
+
+Examples of valid packets:
+
+```text
+1:A
+3:a2:Z4:7
+2:-1:!3:0
+12:x
+```
+
+Examples of invalid packets:
+
+```text
+                    empty packet
+0:a                 zero is not a valid count
+03:a                counts may not begin with zero
+100:a               counts may not exceed 99
+2a                  missing colon and value
+2:                  missing value
+a                   missing count
+1::                 colon cannot be used as a value
+```
 
 ## Requirements
 
-Implement the two functions in `src/alternating_shift.c`.
+Implement all functions in `src/packetrot.c`.
 
-### `char shift_char(char c, int shift)`
+### `bool is_ascii_digit(char c)`
 
-This function shifts one character forward by `shift` positions.
+Return `true` only when `c` is an ASCII digit from `'0'` through `'9'`.
 
-It must obey these rules:
-
-1. Uppercase letters remain uppercase.
-2. Lowercase letters remain lowercase.
-3. Letters wrap around from `Z` to `A` and from `z` to `a`.
-4. Digits wrap around from `9` to `0`.
-5. Characters that are not letters or digits remain unchanged.
-6. The `shift` value may be larger than the size of a character set.
+You must implement this yourself using character comparisons. Do not use
+`isdigit()` in this function.
 
 Examples:
 
-```text
-shift_char('A', 3)  returns 'D'
-shift_char('Z', 3)  returns 'C'
-shift_char('x', 7)  returns 'e'
-shift_char('8', 5)  returns '3'
-shift_char('!', 3)  returns '!'
+```c
+is_ascii_digit('0')  /* true */
+is_ascii_digit('9')  /* true */
+is_ascii_digit('a')  /* false */
+is_ascii_digit('-')  /* false */
 ```
 
-### `void alternating_shift_string(char *str)`
+### `char rot13_char(char c)`
 
-This function encrypts the null-terminated string `str` in place.
+Transform one character according to these rules:
 
-For every character in the string:
-
-- Use a shift of 3 if its index is even.
-- Use a shift of 7 if its index is odd.
-- Use `shift_char()` to transform the character.
-
-The null terminator (`'\0'`) must remain at the end of the string.
+- Uppercase letters rotate by 13 positions.
+- Lowercase letters rotate by 13 positions.
+- Digits rotate by 5 positions.
+- Other characters do not change.
 
 Examples:
 
-```text
-Input:  "ABC"
-Output: "DJF"
-
-Input:  "Zebra 98!"
-Output: "Cleyh 21!"
-
-Input:  "a-b"
-Output: "d-e"
+```c
+rot13_char('A')  /* 'N' */
+rot13_char('z')  /* 'm' */
+rot13_char('7')  /* '2' */
+rot13_char('!')  /* '!' */
 ```
 
-## Guidelines
+### `int decode_packet(char *str)`
 
-You should use `shift_char()` inside `alternating_shift_string()`.
+Validate and decode a packet string.
 
-You can convert a character to its zero-based position by subtracting the
-first character in the relevant set:
+For a valid packet:
+
+1. Decode every run.
+2. Apply `rot13_char()` to the run’s character.
+3. Print the transformed character the requested number of times.
+4. Print one newline after the complete decoded message.
+5. Return the length of the decoded message.
+
+For an invalid packet:
+
+1. Print an error message to standard error.
+2. Return `-1`.
+3. Do not print a partial decoded message.
+
+### `int main(int argc, char *argv[])`
+
+Your program must accept exactly one packet argument.
+
+- With one valid argument, call `decode_packet()` and return zero.
+- With no arguments or more than one argument, print an error message to
+  standard error and return a nonzero value.
+- If `decode_packet()` returns `-1`, return a nonzero value.
+
+## Guidance
+
+ASCII digits are consecutive, so you can convert one digit character to an
+integer value like this:
 
 ```c
-'A' - 'A' == 0
-'B' - 'A' == 1
-'a' - 'a' == 0
-'7' - '0' == 7
+int value = c - '0';
 ```
 
-The modulus operator (`%`) is useful for wrapping around a character set.
-
-For example, shifting `Z` by 3:
+For a two-digit count, such as `"27"`, you can build the integer one digit at
+a time:
 
 ```c
-('Z' - 'A' + 3) % 26
+count = count * 10 + (str[index] - '0');
 ```
 
-This produces the zero-based position of `C`.
+To rotate a letter with wraparound, convert it to a zero-based position,
+rotate it, and convert it back:
 
-Digits work similarly, except there are 10 digits instead of 26 letters.
+```c
+'A' + (c - 'A' + 13) % 26
+```
 
 ## Testing
 
-Run all provided tests from the top-level directory:
+Run the provided test suite from the top-level directory:
 
 ```sh
 make test
 ```
 
-You may write additional tests while developing.
+A successful test run ends with:
+
+```text
+All tests passed.
+```
 
 ## Submission
 
 Submit only:
 
 ```text
-src/alternating_shift.c
+src/packetrot.c
 ```
 
 ## Grading
 
 | Category | Points |
 |---|---:|
-| Single-character shifting with `shift_char()` | 8 |
-| Alternating shifts for simple strings | 6 |
-| Mixed letters, digits, punctuation, and spaces | 6 |
+| `is_ascii_digit()` correctly identifies ASCII digits | 3 |
+| `rot13_char()` correctly transforms letters, digits, and punctuation | 5 |
+| `decode_packet()` validates and decodes valid packet strings | 7 |
+| Invalid-packet handling and `main()` argument processing | 5 |
 | **Total** | **20** |
